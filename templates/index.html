@@ -1,0 +1,39 @@
+{% extends "bootstrap/base.html" %}
+{% block title %}Topページ{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>今日の日経平均終値予想：{{ predict }}円</h1>
+    <h2>過去30日の実績</h2>
+    {% if data == [] %}
+        <p>過去の実績データはまだありません</p>
+    {% else %}
+        <table border="1">
+            <tr>
+                <th rowspan="2">日付</th>
+                <th colspan="3">日経平均</th>
+                <th colspan="3">前日からの変化</th>
+            </tr>
+            <tr>
+                <th>実績</th>
+                <th>予想</th>
+                <th>予実差</th>
+                <th>実績</th>
+                <th>予想</th>
+                <th>上下方向の正誤</th>
+            </tr>
+            {% for datum in data %}
+                <tr>
+                    <td>{{ datum.Date }}</td>
+                    <td>{{ datum.Nikkei }}円</td>
+                    <td>{{ datum.predict }}円</td>
+                    <td>{{ datum.gap }}円</td>
+                    <td>{{ datum.Nikkei_dod }}円</td>
+                    <td>{{ datum.predict_dod }}%</td>
+                    <td>{{ datum.direction_check }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</div>
+{% endblock %}
