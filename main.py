@@ -4,7 +4,6 @@ from datetime import date, timedelta
 import sqlite3
 import sys
 sys.path.append("..\\NikkeiPredictionPackage")
-sys.path.append("C:\Users\masai\anaconda3\Lib\site-packages\flask_bootstrap")
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
