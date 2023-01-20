@@ -1,14 +1,7 @@
 # coding: UTF-8
 import numpy as np
 import pandas as pd
-from pandas import read_excel
-import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.python.keras.models import load_model
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error
-from datetime import datetime
 from pickle import load
 
 # ! pip install webdriver_manager
@@ -16,9 +9,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.select import Select
 from selenium.webdriver.chrome.options import Options
-from time import sleep
 from datetime import datetime
 from datetime import date, timedelta
 import re
