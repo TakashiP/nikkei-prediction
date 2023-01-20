@@ -39,8 +39,6 @@ def nikkei_prediction():
 scheduler.start()
 ## ここまでスケジューラー
 
-
-
 @app.route('/')
 def index():
     con = sqlite3.connect(DATABASE)
