@@ -1,6 +1,7 @@
 from flask import Flask, render_template
 from flask_bootstrap import Bootstrap
 from datetime import date, timedelta
+import os
 import sqlite3
 import sys
 sys.path.append("..\\NikkeiPredictionPackage")
