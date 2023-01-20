@@ -45,7 +45,8 @@ def index():
     con = sqlite3.connect(DATABASE)
     predicted_data = con.execute('SELECT predict FROM prediction WHERE DATE = ?', [today]).fetchone()
     con.close()  # データベースを閉じる
-    predict = predicted_data[0]
+    predict = 1000
+#    predict = predicted_data[0]
     print(predict)
 
     con = sqlite3.connect(DATABASE)

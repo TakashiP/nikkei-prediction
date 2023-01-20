@@ -1,12 +1,12 @@
 """
 # 起動するときは、以下を入力して、Flaskアプリを環境変数に一時的に設定してから実行
 # Pycharmのターミナルの場合
-$env:FLASK_APP='NikkeiPredictionPackage'
+$env:FLASK_APP='main'
 $env:FLASK_ENV='development'
 flask run
 
 # WindowsのCMDの場合
-set FLASK_APP=NikkeiPredictionPackage # フォルダ名に揃える
+set FLASK_APP=main # フォルダ名に揃える
 set FLASK_ENV=development
 flask run
 
