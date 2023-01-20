@@ -1,12 +1,12 @@
 from flask import Flask, render_template
-from flask_bootstrap import Bootstrap
+# from flask_bootstrap import Bootstrap
 from datetime import date, timedelta
 import sqlite3
 import sys
 sys.path.append("..\\NikkeiPredictionPackage")
 
 app = Flask(__name__)
-bootstrap = Bootstrap(app)
+# bootstrap = Bootstrap(app)
 
 import Nikkei_10_utilized
 import db
@@ -31,12 +31,12 @@ scheduler = APScheduler()
 # if you don't wanna use a config, you can set options here:
 # scheduler.api_enabled = True
 scheduler.init_app(app)
-scheduler.start()
 
-@scheduler.task('interval', id='do_job_1', seconds=10, misfire_grace_time=900)
+@scheduler.task('cron', id='do_job_1', hour=7)
 def nikkei_prediction():
     Nikkei_10_utilized.predict()
 
+scheduler.start()
 ## ここまでスケジューラー
 
 
@@ -67,4 +67,3 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
     app.run(host ='0.0.0.0',port = port)
-
