@@ -45,7 +45,7 @@ def index():
     con = sqlite3.connect(DATABASE)
     predicted_data = con.execute('SELECT predict FROM prediction WHERE DATE = ?', [today]).fetchone()
     con.close()
-    predict = predicted_data[0]
+    predict = "{:,.0f}".format(predicted_data[0])
     print(predict)
 
     con = sqlite3.connect(DATABASE)
@@ -55,7 +55,7 @@ def index():
 
     data = []
     for row in actual_data:
-        data.append({'Date':row[0], 'Nikkei':row[1], 'predict':row[2], 'gap':row[3], 'Nikkei_dod':row[4], 'predict_dod':row[5], 'direction_check':row[6]})
+        data.append({'Date':row[0], 'Nikkei':"{:,.0f}".format(row[1]), 'predict':"{:,.0f}".format(row[2]), 'gap':"{:,.0f}".format(row[3]), 'Nikkei_dod':"{:,.0f}".format(row[4]), 'predict_dod':"{:,.0f}".format(row[5]), 'direction_check':row[6]})
 
     return render_template(
         'index.html',

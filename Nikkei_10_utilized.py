@@ -237,7 +237,6 @@ def predict():
     # print(actual.shape)
     # print(actual)
 
-
     actual = actual.reshape(1,actual.shape[0], actual.shape[1])
 
     # print(actual.shape)
@@ -254,7 +253,7 @@ def predict():
 
     con = sqlite3.connect(DATABASE)
     cur = con.cursor()
-    cur.execute('INSERT INTO prediction(Date, predict) VALUES(?, ?)', [today, int(predict)])
+    cur.execute('INSERT INTO prediction(Date, predict) VALUES(?, ?)', [today, predict])
     con.commit()
     con.close()
 
@@ -318,6 +317,6 @@ def predict():
     con = sqlite3.connect(DATABASE)
     cur = con.cursor()
     cur.execute('INSERT INTO actual(Date, Nikkei, last_predict, gap, Nikkei_dod, predict_dod, direction_check) VALUES(?, ?, ?, ?, ?, ?, ? )',
-                [yesterday, int(Nikkei), int(last_predict), int(gap), int(Nikkei_dod), int(predict_dod), direction_check])
+                [yesterday, Nikkei, last_predict, gap, Nikkei_dod, predict_dod, direction_check])
     con.commit()
     con.close()
