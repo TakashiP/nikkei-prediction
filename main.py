@@ -59,7 +59,7 @@ def index():
     print(actual_data)
 
     d_html = today_time.strftime('%-m/%-d') #ゼロ埋め削除。Windowsでは、-mなどではなく、#mなどと表記する必要
-    t_html = today_time.strftime('%-H:%-M') #ゼロ埋め削除。Windowsでは、-Hなどではなく、#Hなどと表記する必要
+    t_html = today_time.strftime('%-H:%M') #ゼロ埋め削除。Windowsでは、-Hなどではなく、#Hなどと表記する必要
 
     data = []
     for row in actual_data:
