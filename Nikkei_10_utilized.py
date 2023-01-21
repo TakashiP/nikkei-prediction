@@ -63,7 +63,11 @@ def predict():
 
 
     # 今日・昨日・一昨日の日付を取得
-    today = date.today()
+    import pytz
+
+    jst = pytz.timezone('Asia/Tokyo')
+    today_time = datetime.now().astimezone(jst)
+    today = today_time.date()
     yesterday = today - timedelta(days=1)
     the_day_before_yesterday = yesterday - timedelta(days=1)
     print('yesterday = ', yesterday)

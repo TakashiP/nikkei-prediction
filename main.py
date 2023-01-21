@@ -1,6 +1,7 @@
 from flask import Flask, render_template
 from flask_bootstrap import Bootstrap
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+import pandas as pd
 import os
 import sqlite3
 import sys
@@ -23,6 +24,7 @@ import pytz
 jst = pytz.timezone('Asia/Tokyo')
 today_time = datetime.now().astimezone(jst)
 today = today_time.date()
+yesterday = today - timedelta(days=1)
 
 # set configuration values
 class Config:
@@ -39,18 +41,22 @@ scheduler.init_app(app)
 @scheduler.task('cron', id='do_job_1', hour='7', minute='00', timezone=jst)
 def nikkei_prediction():
     Nikkei_10_utilized.predict()
-    today_time = datetime.now().astimezone(jst)
-    today = today_time.date()
 
 scheduler.start()
 ## ここまでスケジューラー
 
 @app.route('/')
 def index():
-    con = sqlite3.connect(DATABASE)
-    predicted_data = con.execute('SELECT predict FROM prediction WHERE DATE = ?', [today]).fetchone()
-    con.close()
-    predict = "{:,.0f}".format(predicted_data[0])
+    with sqlite3.connect(DATABASE) as con:
+        df_from_sql = pd.read_sql('SELECT * FROM prediction', con)
+    update_time = df_from_sql.iloc[-1,0]
+    print(update_time)
+    df_from_sql = df_from_sql.set_index('Date')
+    if str(today) in df_from_sql.index:
+        predict = df_from_sql.loc[str(today),'predict']
+    else:
+        predict = df_from_sql.loc[str(yesterday), 'predict']
+    predict = "{:,.0f}".format(predict)
     print(predict)
 
     con = sqlite3.connect(DATABASE)
@@ -58,8 +64,7 @@ def index():
     con.close()
     print(actual_data)
 
-    d_html = today_time.strftime('%-m/%-d') #ゼロ埋め削除。Windowsでは、-mなどではなく、#mなどと表記する必要
-    t_html = today_time.strftime('%-H:%M') #ゼロ埋め削除。Windowsでは、-Hなどではなく、#Hなどと表記する必要
+    d_html = datetime.strptime(update_time, '%Y-%m-%d').strftime('%-m/%-d') #ゼロ埋め削除。Windowsでは、-mなどではなく、#mなどと表記する必要
 
     data = []
     for row in actual_data:
@@ -68,7 +73,6 @@ def index():
     return render_template(
         'index.html',
         d_html=d_html,
-        t_html=t_html,
         predict=predict,
         data=data
     )
