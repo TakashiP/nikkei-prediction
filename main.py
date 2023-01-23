@@ -38,7 +38,7 @@ scheduler = APScheduler()
 # scheduler.api_enabled = True
 scheduler.init_app(app)
 
-@scheduler.task('cron', id='do_job_1', hour='7', minute='00', timezone=jst)
+@scheduler.task('cron', id='do_job_1', hour='6', minute='30', timezone=jst) #サーバーがあるシンガポール時間。日本時間で7:30実行を想定。
 def nikkei_prediction():
     Nikkei_10_utilized.predict()
 
