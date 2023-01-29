@@ -38,7 +38,7 @@ scheduler = APScheduler()
 # scheduler.api_enabled = True
 scheduler.init_app(app)
 
-@scheduler.task('cron', id='do_job_1', hour='4', minute='20', timezone=jst) #11:30に設定すると7:40に動いた(サーバー時刻は22:40)。日ズレがKeyErrorを起こしている可能性があるため、一旦日を揃えるべく4時に設定し、11時起動を狙う。、1:20減らして10:20に設定し、6:30起動を目指す
+@scheduler.task('cron', id='do_job_1', hour='16', minute='50', timezone=jst) #11:30に設定すると7:40に動いた(サーバー時刻は22:40)。日ズレがKeyErrorを起こしている可能性があるため、一旦日を揃えるべく4時に設定し、11時起動を狙う。、1:20減らして10:20に設定し、6:30起動を目指す
 def nikkei_prediction():
     Nikkei_10_utilized.predict()
 
