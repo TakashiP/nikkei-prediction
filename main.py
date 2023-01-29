@@ -67,7 +67,7 @@ def index():
     d_html = datetime.strptime(update_time, '%Y-%m-%d').strftime('%-m/%-d') #ゼロ埋め削除。Windowsでは、-mなどではなく、#mなどと表記する必要
 
     data = []
-    for row in actual_data:
+    for row in reversed(actual_data):
         data.append({'Date':row[0], 'Nikkei':"{:,.0f}".format(row[1]), 'predict':"{:,.0f}".format(row[2]), 'gap':"{:,.0f}".format(row[3]), 'Nikkei_dod':"{:,.0f}".format(row[4]), 'predict_dod':"{:,.0f}".format(row[5]), 'direction_check':row[6]})
 
     return render_template(
