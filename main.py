@@ -17,17 +17,17 @@ DATABASE = 'database.db'
 db.create_actual_table()
 db.create_prediction_table()
 
-# ここからApscheduler
-from apscheduler.schedulers.blocking import BlockingScheduler
+# # ここからApscheduler
+# from apscheduler.schedulers.blocking import BlockingScheduler
+#
+# if __name__ == '__main__':
+#     scheduler = BlockingScheduler({'apscheduler.timezone': 'Asia/Tokyo'})
+#     scheduler.add_job(Nikkei_10_utilized.predict, 'cron', hour='18', minute='15')
+#     scheduler.start()
+# # ここまでApscheduler
 
-if __name__ == '__main__':
-    scheduler = BlockingScheduler({'apscheduler.timezone': 'Asia/Tokyo'})
-    scheduler.add_job(Nikkei_10_utilized.predict, 'cron', hour='18', minute='15')
-    scheduler.start()
-# ここまでApscheduler
-
-# ## ここからスケジューラー
-# from flask_apscheduler import APScheduler
+## ここからスケジューラー
+from flask_apscheduler import APScheduler
 import pytz
 
 jst = pytz.timezone('Asia/Tokyo')
@@ -35,24 +35,24 @@ today_time = datetime.now().astimezone(jst)
 today = today_time.date()
 yesterday = today - timedelta(days=1)
 
-# # set configuration values
-# class Config:
-#     SCHEDULER_API_ENABLED = True
-#
-# app.config.from_object(Config())
-#
-# # initialize scheduler
-# scheduler = APScheduler()
-# # if you don't wanna use a config, you can set options here:
-# # scheduler.api_enabled = True
-# scheduler.init_app(app)
-#
-# @scheduler.task('cron', id='do_job_1', hour='11', minute='55', timezone=jst) #11:30に設定すると初回5:11に動いた。11:55に設定し、5:35起動を目指す
-# def nikkei_prediction():
-#     Nikkei_10_utilized.predict()
-#
-# scheduler.start()
-# ## ここまでスケジューラー
+# set configuration values
+class Config:
+    SCHEDULER_API_ENABLED = True
+
+app.config.from_object(Config())
+
+# initialize scheduler
+scheduler = APScheduler()
+# if you don't wanna use a config, you can set options here:
+# scheduler.api_enabled = True
+scheduler.init_app(app)
+
+@scheduler.task('cron', id='do_job_1', hour='11', minute='55', timezone=jst) #11:30に設定すると初回5:11に動いた。11:55に設定し、5:35起動を目指す
+def nikkei_prediction():
+    Nikkei_10_utilized.predict()
+
+scheduler.start()
+## ここまでスケジューラー
 
 @app.route('/')
 def index():
