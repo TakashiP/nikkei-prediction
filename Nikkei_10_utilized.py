@@ -8,10 +8,6 @@ from datetime import datetime
 from datetime import date, timedelta
 import re
 import os
-import sys
-import glob
-import shutil
-import time
 import calendar
 import sqlite3
 
@@ -89,12 +85,6 @@ def predict():
     print('JBond10 = ', JBond10)
 
     # 前日の日本のマネタリーベースを、日銀サイトからCSVをダウンロードして取得
-    current_dir = os.getcwd()  # カレントディレクトリの取得
-    tmp_download_dir = f'{current_dir}\\tmpDownload'  # 一時ダウンロードフォルダパスの設定
-    if os.path.isdir(tmp_download_dir):  # 一時フォルダが存在していたら消す(前回のが残存しているかも)
-        shutil.rmtree(tmp_download_dir)
-    os.mkdir(tmp_download_dir)  # 一時ダウンロードフォルダの作成
-
     url = "https://www.boj.or.jp/statistics/boj/other/mb/mblong.xlsx"
     save_name = url.split('/')[-1]
 
