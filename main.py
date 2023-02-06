@@ -17,16 +17,7 @@ DATABASE = 'database.db'
 db.create_actual_table()
 db.create_prediction_table()
 
-# # ここからApscheduler
-# from apscheduler.schedulers.blocking import BlockingScheduler
-#
-# if __name__ == '__main__':
-#     scheduler = BlockingScheduler({'apscheduler.timezone': 'Asia/Tokyo'})
-#     scheduler.add_job(Nikkei_10_utilized.predict, 'cron', hour='18', minute='15')
-#     scheduler.start()
-# # ここまでApscheduler
-
-## ここからスケジューラー
+## ここからflask_apscheduler
 from flask_apscheduler import APScheduler
 import pytz
 
@@ -43,11 +34,9 @@ app.config.from_object(Config())
 
 # initialize scheduler
 scheduler = APScheduler()
-# if you don't wanna use a config, you can set options here:
-# scheduler.api_enabled = True
 scheduler.init_app(app)
 
-@scheduler.task('cron', id='do_job_1', hour='11', minute='55', timezone=jst) #11:30に設定すると初回5:11に動いた。11:55に設定し、5:35起動を目指す
+@scheduler.task('cron', id='do_job_1', hour='7', timezone=jst)
 def nikkei_prediction():
     Nikkei_10_utilized.predict()
 

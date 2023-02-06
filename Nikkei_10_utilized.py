@@ -4,12 +4,6 @@ import pandas as pd
 from tensorflow import keras
 from pickle import load
 
-# ! pip install webdriver_manager
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
 from datetime import datetime
 from datetime import date, timedelta
 import re
@@ -21,46 +15,20 @@ import time
 import calendar
 import sqlite3
 
-def predict():
+from bs4 import BeautifulSoup
+import requests
+from urllib.request import urlopen
+from shutil import copyfileobj
 
+
+def predict():
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     DATABASE = 'database.db'
 
-    #既存データ読み込み・新規データと連結・整理
-    dataframe = pd.read_excel('./Nikkei_10.xlsx',sheet_name='no_nan',usecols=[0,1,2,3,4,5,6,7])
-    dataset = dataframe[['Nikkei','EPS_ind','JBond10','JMB','JUER','JCPI','Dow']]
+    # 既存データ読み込み・新規データと連結・整理
+    dataframe = pd.read_excel('./Nikkei_10.xlsx', sheet_name='no_nan', usecols=[0, 1, 2, 3, 4, 5, 6, 7])
+    dataset = dataframe[['Nikkei', 'EPS_ind', 'JBond10', 'JMB', 'JUER', 'JCPI', 'Dow']]
     dataset = dataset.astype('float32')
-
-    # ここから各種データの取得・追加
-
-    def scrape(url):
-        options = Options()
-        options.add_argument('--headless') # ヘッドレスモード
-        driver_path = ChromeDriverManager().install()
-        service = Service(executable_path=driver_path)
-        browser = webdriver.Chrome(service=service, options=options)
-        url = url
-        browser.get(url)
-        return browser
-
-    def scrape_dl(url): #ファイルダウンロードを伴う処理
-        current_dir = os.getcwd() # カレントディレクトリの取得
-        tmp_download_dir = f'{current_dir}\\tmpDownload' # 一時ダウンロードフォルダパスの設定
-        if os.path.isdir(tmp_download_dir): # 一時フォルダが存在していたら消す(前回のが残存しているかも)
-            shutil.rmtree(tmp_download_dir)
-        os.mkdir(tmp_download_dir) # 一時ダウンロードフォルダの作成
-        from selenium.webdriver.chrome.options import Options
-        options = Options()
-        options.add_argument('--headless') # ヘッドレスモード
-        prefs = {'download.default_directory': tmp_download_dir}
-        options.add_experimental_option('prefs', prefs)
-        driver_path = ChromeDriverManager().install()
-        service = Service(executable_path=driver_path)
-        browser = webdriver.Chrome(service=service, options=options)
-        url = url
-        browser.get(url)
-        return browser, tmp_download_dir
-
 
     # 今日・昨日・一昨日の日付を取得
     import pytz
@@ -73,17 +41,18 @@ def predict():
     print('yesterday = ', yesterday)
 
     # 前日の日経平均の終値を取得
-    browser = scrape('https://www.nikkei.com/markets/worldidx/chart/nk225/')
-    Nikkei_place = browser.find_element(By.CLASS_NAME, 'economic_value')
+    r = requests.get('https://www.nikkei.com/markets/worldidx/chart/nk225/')
+    soup = BeautifulSoup(r.text, 'html.parser')
+    Nikkei_place = soup.find('span', class_='economic_value_now a-fs26')
     Nikkei = Nikkei_place.text
-    Nikkei = float(Nikkei.split(' ')[0].replace(',',''))
-    browser.quit()
+    Nikkei = float(Nikkei.split(' ')[0].replace(',', ''))
     print('Nikkei = ', Nikkei)
 
     # 前日のPER(指数ベース)終値を取得し、EPSを計算
-    browser = scrape('https://indexes.nikkei.co.jp/nkave/archives/data?list=per')
+    r = requests.get('https://indexes.nikkei.co.jp/nkave/archives/data?list=per')
+    soup = BeautifulSoup(r.text, 'html.parser')
 
-    elems_td = browser.find_elements(By.TAG_NAME, 'td')
+    elems_td = soup.find_all('td')
 
     keys = []
     for elem_td in elems_td:
@@ -93,8 +62,8 @@ def predict():
     keys = keys[3:]
 
     per_index_list = []
-    for i,key in enumerate(keys):
-        if i%3 == 2:
+    for i, key in enumerate(keys):
+        if i % 3 == 2:
             if key == '-':
                 per_index_list.append('nan')
             else:
@@ -107,102 +76,78 @@ def predict():
     else:
         EPS_ind = float(Nikkei / per_index)
 
-    browser.quit()
     print('per_index = ', per_index)
     print('EPS_ind = ', EPS_ind)
 
     # 前日の10年国債利回りの終値を取得
-    browser = scrape('https://www.sbisec.co.jp/ETGate/?_ControlID=WPLETmgR001Control&_PageID=WPLETmgR001Mdtl20&_DataStoreID=DSWPLETmgR001Control&_ActionID=DefaultAID&burl=iris_indexDetail&cat1=market&cat2=index&dir=tl1-idxdtl%7Ctl2-JP10YT%3DXX%7Ctl5-jpn&file=index.html&getFlg=on')
-    JBond10_place = browser.find_element(By.ID, 'idxdtlPrice')
+    r = requests.get('https://fund.smtb.jp/smtbhp/qsearch.exe?F=market3')
+    soup = BeautifulSoup(r.text, 'html.parser')
+    JBond10_place = soup.select_one(
+        '#market3 > div > div > div.mod-layout > div > div:nth-child(1) > div > div > ul > li:nth-child(1) > span:nth-child(2) > b')
     JBond10 = JBond10_place.text
-    JBond10 = float(JBond10.split(' ')[0])
-    browser.quit()
+    JBond10 = float(JBond10.split(' ')[0].replace(',', ''))
     print('JBond10 = ', JBond10)
 
-
     # 前日の日本のマネタリーベースを、日銀サイトからCSVをダウンロードして取得
-    browser,tmp_download_dir = scrape_dl('https://www.boj.or.jp/statistics/boj/other/mb/mblong.xlsx')
+    current_dir = os.getcwd()  # カレントディレクトリの取得
+    tmp_download_dir = f'{current_dir}\\tmpDownload'  # 一時ダウンロードフォルダパスの設定
+    if os.path.isdir(tmp_download_dir):  # 一時フォルダが存在していたら消す(前回のが残存しているかも)
+        shutil.rmtree(tmp_download_dir)
+    os.mkdir(tmp_download_dir)  # 一時ダウンロードフォルダの作成
 
-    # 待機タイムアウト時間(秒)設定
-    timeout_second = 10
+    url = "https://www.boj.or.jp/statistics/boj/other/mb/mblong.xlsx"
+    save_name = url.split('/')[-1]
 
-    # 指定時間分待機
-    for i in range(timeout_second + 1):
-        # ファイル一覧取得
-        download_fileName = glob.glob(f'{tmp_download_dir}\\*.*')
+    with urlopen(url) as input_file, open(save_name, 'wb') as output_file:
+        print("ダウンロード中")
+        copyfileobj(input_file, output_file)
+        print("ダウンロードが完了しました。")
 
-        # ファイルが存在する場合
-        if download_fileName:
-            # 拡張子の抽出
-            extension = os.path.splitext(download_fileName[0])
-
-            # 拡張子が '.crdownload' ではない ダウンロード完了 待機を抜ける
-            if ".crdownload" not in extension[1]:
-                time.sleep(2)
-                break
-
-        # 指定時間待っても .crdownload 以外のファイルが確認できない場合 エラー
-        if i >= timeout_second:
-            # == エラー処理をここに記載 ==
-            # 終了処理
-            browser.quit()
-            # 一時フォルダの削除
-            shutil.rmtree(tmp_download_dir)
-            sys.exit()
-
-        # 一秒待つ
-        time.sleep(1)
-
-    # === ダウンロード完了後処理 ===
-    # Chromeを閉じる
-    browser.quit()
-
-    temp_df = pd.read_excel('./tmpDownload/mblong.xlsx',sheet_name='平残（Average amounts outstanding）',skiprows=7,usecols=[2])
-    JMB = int(temp_df.iloc[-1:,0])
-
-    # 一時フォルダの削除
-    shutil.rmtree(tmp_download_dir)
+    JMB_df = pd.read_excel(save_name, sheet_name='平残（Average amounts outstanding）', usecols=[2], skiprows=7, )
+    JMB_df = JMB_df.dropna(how='all')
+    JMB = int(JMB_df.iloc[-1:, 0])
     print('JMB = ', JMB)
 
-
     # 前日の失業率を取得
-    browser = scrape('https://www.stat.go.jp/data/roudou/sokuhou/tsuki/index.html')
-    elems_td = browser.find_element(By.CLASS_NAME, 'datatable')
-    JUER_place = elems_td.find_element(By.TAG_NAME, 'strong')
+    r = requests.get('https://www.stat.go.jp/data/roudou/sokuhou/tsuki/index.html')
+    soup = BeautifulSoup(r.text, 'html.parser')
+    JUER_place = soup.select_one(
+        '#section > article:nth-child(2) > table > tbody > tr:nth-child(3) > td:nth-child(4) > strong')
     JUER = JUER_place.text
-    JUER = float(JUER.replace('%',''))
-    browser.quit()
+    JUER = float(JUER.split(' ')[0].replace('%', ''))
     print('JUER = ', JUER)
 
-
     # 前日のCPIを取得
-    browser = scrape('https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html')
-    section = browser.find_element(By.ID, "section")
-    article = section.find_elements(By.TAG_NAME, "article")[1]
-    p = article.find_element(By.TAG_NAME, "p")
-    p_0 = p.text.splitlines()[0]
-    JCPI = float(re.findall(r'\d+(?:\.\d+)?',p_0)[-1])
+    r = requests.get('https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html')
+    soup = BeautifulSoup(r.text, 'html.parser')
+    JCPI_place = soup.select_one('#section > article:nth-child(2) > div > p')
+    # print(JCPI_place)
+    JCPI_place_0 = JCPI_place.text.splitlines()[0]
+    # print(JCPI_place_0)
+    JCPI_place_0_0 = JCPI_place_0.split(' ')[1]
+    # print(JCPI_place_0_0)
+    JCPI = float(re.findall(r'\d+(?:\.\d+)?', JCPI_place_0_0)[-1])
     print('JCPI = ', JCPI)
-    browser.quit()
 
     # 前日のダウ平均の終値を取得
-    browser = scrape('https://finance.yahoo.co.jp/quote/%5EDJI')
-    Dow_place = browser.find_element(By.CLASS_NAME, '_3BGK5SVf')
+    r = requests.get('https://us.kabutan.jp/indexes/%5EDJI/chart')
+    soup = BeautifulSoup(r.text, 'html.parser')
+    Dow_place = soup.select_one(
+        'body > div > div > div.float-left.w-main > main > div.border-azure.border-2 > div.pr-2px.pb-2px.pl-2px > div.flex.justify-between.items-end > div.w-full.pr-2px > div.pl-1.pb-1.pr-2.flex > div.flex.w-full.items-end.justify-between > div.flex-1.text-right.text-3xl.mr-1')
     Dow = Dow_place.text
-    Dow = float(Dow.replace(',',''))
-    browser.quit()
+    Dow = Dow.split(' ')[0].replace('$', '')
+    Dow = float(Dow.split(' ')[0].replace(',', ''))
     print('Dow = ', Dow)
-
 
     latest = pd.DataFrame(
         data=np.array([[yesterday, Nikkei, EPS_ind, JBond10, JMB, JUER, JCPI, Dow]]),
-        columns=['Date','Nikkei','EPS_ind','JBond10','JMB','JUER','JCPI','Dow']
-        )
+        columns=['Date', 'Nikkei', 'EPS_ind', 'JBond10', 'JMB', 'JUER', 'JCPI', 'Dow']
+    )
     print(latest)
     print(latest.shape)
 
-    #既存データと新規データ連結・月次データを前月末日までさかのぼって上書き
-    dataframe = pd.concat([dataframe,latest], axis=0)
+    # 既存データと新規データ連結・月次データを前月末日までさかのぼって上書き
+    dataframe = pd.concat([dataframe, latest], axis=0)
 
     dt = dataframe['Date'].iloc[-1]
     if dt.month == 1:
@@ -223,16 +168,16 @@ def predict():
 
     dataframe.reset_index(inplace=True)
 
-    dataframe.to_excel('./Nikkei_10.xlsx',sheet_name='no_nan',index=False)
+    dataframe.to_excel('./Nikkei_10.xlsx', sheet_name='no_nan', index=False)
 
-    new_dataset = dataframe[['Nikkei','EPS_ind','JBond10','JMB','JUER','JCPI','Dow']].to_numpy()
+    new_dataset = dataframe[['Nikkei', 'EPS_ind', 'JBond10', 'JMB', 'JUER', 'JCPI', 'Dow']].to_numpy()
     new_dataset = new_dataset.astype('float32')
 
     print(new_dataset[-10:])
     print(new_dataset.shape)
 
     lookback = 24
-    actual = new_dataset[len(new_dataset)-lookback:,:]
+    actual = new_dataset[len(new_dataset) - lookback:, :]
 
     scaler_train = load(open('nikkei_10_standard.pkl', 'rb'))
     actual = scaler_train.transform(actual)
@@ -241,7 +186,7 @@ def predict():
     # print(actual.shape)
     # print(actual)
 
-    actual = actual.reshape(1,actual.shape[0], actual.shape[1])
+    actual = actual.reshape(1, actual.shape[0], actual.shape[1])
 
     # print(actual.shape)
     # print(actual)
@@ -251,9 +196,10 @@ def predict():
     # model.summary()
 
     predict = model.predict(actual)
-    predict = predict*scale + mean
+    predict = predict * scale + mean
     predict = float(predict[0][0])
-    print('今日の終値は、',predict,'円')
+
+    print('今日の終値は、', predict, '円')
 
     con = sqlite3.connect(DATABASE)
     cur = con.cursor()
@@ -265,7 +211,7 @@ def predict():
         df_from_sql = pd.read_sql('SELECT * FROM prediction', con)
     df_from_sql = df_from_sql.set_index('Date')
     if str(yesterday) in df_from_sql.index:
-        last_predict = df_from_sql.loc[str(yesterday),'predict']
+        last_predict = df_from_sql.loc[str(yesterday), 'predict']
     else:
         last_predict = 0
     print('last_predict = ', last_predict)
@@ -274,7 +220,7 @@ def predict():
         df_from_sql = pd.read_sql('SELECT * FROM prediction', con)
     df_from_sql = df_from_sql.set_index('Date')
     if str(the_day_before_yesterday) in df_from_sql.index:
-        sec_last_predict = df_from_sql.loc[str(the_day_before_yesterday),'predict']
+        sec_last_predict = df_from_sql.loc[str(the_day_before_yesterday), 'predict']
     else:
         sec_last_predict = 0
     print('sec_last_predict = ', sec_last_predict)
@@ -283,7 +229,7 @@ def predict():
         df_from_sql = pd.read_sql('SELECT * FROM actual', con)
     df_from_sql = df_from_sql.set_index('Date')
     if str(the_day_before_yesterday) in df_from_sql.index:
-        sec_last_Nikkei = df_from_sql.loc[str(the_day_before_yesterday),'Nikkei']
+        sec_last_Nikkei = df_from_sql.loc[str(the_day_before_yesterday), 'Nikkei']
     else:
         sec_last_Nikkei = 0
     print('sec_last_Nikkei = ', sec_last_Nikkei)
@@ -320,7 +266,8 @@ def predict():
 
     con = sqlite3.connect(DATABASE)
     cur = con.cursor()
-    cur.execute('INSERT INTO actual(Date, Nikkei, last_predict, gap, Nikkei_dod, predict_dod, direction_check) VALUES(?, ?, ?, ?, ?, ?, ? )',
-                [yesterday, Nikkei, last_predict, gap, Nikkei_dod, predict_dod, direction_check])
+    cur.execute(
+        'INSERT INTO actual(Date, Nikkei, last_predict, gap, Nikkei_dod, predict_dod, direction_check) VALUES(?, ?, ?, ?, ?, ?, ? )',
+        [yesterday, Nikkei, last_predict, gap, Nikkei_dod, predict_dod, direction_check])
     con.commit()
     con.close()
