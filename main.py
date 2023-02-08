@@ -36,7 +36,7 @@ app.config.from_object(Config())
 scheduler = APScheduler()
 scheduler.init_app(app)
 
-@scheduler.task('cron', id='do_job_1', hour='7', timezone=jst)
+@scheduler.task('cron', id='do_job_1', hour='6', minute='45', timezone=jst)
 def nikkei_prediction():
     Nikkei_10_utilized.predict()
 
