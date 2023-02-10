@@ -60,7 +60,7 @@ def index():
     con = sqlite3.connect(DATABASE)
     actual_data = con.execute('SELECT * FROM actual LIMIT 30') .fetchall()
     con.close()
-    print(actual_data)
+    # print(actual_data)
 
     d_html = datetime.strptime(update_time, '%Y-%m-%d').strftime('%-m/%-d') #ゼロ埋め削除。Windowsでは、-mなどではなく、#mなどと表記する必要
 
